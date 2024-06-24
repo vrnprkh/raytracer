@@ -3,11 +3,14 @@
 #include "interval.h"
 #include "ray.h"
 
+class material;
+
 class hit_record {
 public:
   point3 p;
   vec3 normal;
   double t;
+  shared_ptr<material> mat;
 
   // track which side the ray hits the surface
   bool front_face;
