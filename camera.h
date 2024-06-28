@@ -15,6 +15,11 @@ public:
   int image_width = 100;
   int samples_per_pixel = 10;
   int max_depth = 10;
+
+  double vfov = 90;         // vertical fov
+  point3 lookfrom{0, 0, 0}; // Point camera is looking from
+  point3 lookat{0, 0, -1};  // Point camera is looking at
+  vec3 vup{0, 1, 0};        // Camera-relative "up" direction
   void render(const hittable &world) {
     initialize();
     // render
@@ -42,25 +47,37 @@ private:
   vec3 pixel_delta_u;
   point3 pixel00_location;
   double pixel_sample_scale;
+
+  vec3 u, v, w; // Camera frame basis vectors
   void initialize() {
     image_height = int(image_width / aspect_ratio);
     image_height = (image_height < 1) ? 1 : image_height;
-    double viewport_height = 2.0; // arbritary
+
+    center = lookfrom;
+    // distance from viewport to camera
+    double focal_length = (lookfrom - lookat).length();
+    auto theta = deg_to_rad(vfov);
+    auto h = tan(theta / 2);
+
+    double viewport_height = 2 * h * focal_length;
     double viewport_width =
         viewport_height * (double(image_width) / image_height);
-    // distance from viewport to camera
-    double focal_length = 1.0;
-    center = point3(0, 0, 0);
+
+    // Calculate the u,v,w unit basis vectors for the camera coordinate frame.
+    w = unit_vector(lookfrom - lookat);
+    u = unit_vector(cross(vup, w));
+    v = cross(w, u);
 
     // vectors accros horiztonal (l->r) and down the vectrical (u->d) viewport
-    vec3 viewport_u = vec3(viewport_width, 0, 0);
-    vec3 viewport_v = vec3(0, -viewport_height, 0); // 3d coordinate convention
+    vec3 viewport_u = viewport_width * u;
+    vec3 viewport_v = viewport_height * -v;
     pixel_delta_u = viewport_u / image_width;
     pixel_delta_v = viewport_v / image_height;
 
     // top left corner of the viewport (not centered on the pixel)
-    point3 viewport_upper_left =
-        center - vec3(0, 0, focal_length) - viewport_u / 2 - viewport_v / 2;
+
+    auto viewport_upper_left =
+        center - (focal_length * w) - viewport_u / 2 - viewport_v / 2;
 
     // center on the pixel
     pixel00_location =
