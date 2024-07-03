@@ -53,13 +53,14 @@ void bouncingSpheres() {
 
   // create bvh
   world = hittable_list(make_shared<bvh_node>(world));
+
   //  camera
   camera cam;
 
   cam.aspect_ratio = 16.0 / 9.0;
-  cam.image_width = 400;
-  cam.samples_per_pixel = 40;
-  cam.max_depth = 10;
+  cam.image_width = 1200;
+  cam.samples_per_pixel = 500;
+  cam.max_depth = 50;
 
   cam.vfov = 20;
   cam.lookfrom = point3(13, 2, 3);
@@ -72,12 +73,48 @@ void bouncingSpheres() {
   cam.render(world);
 }
 
+void foo() {
+  hittable_list world;
+  // materials
+  auto ground_material = make_shared<lambertian>(color(0.5, 0.5, 0.5));
+  auto sphere_1_mat = make_shared<weird>(vec3(1, 2, 1));
+  auto sphere_2_mat = make_shared<lambertian>(color(0.8, 0.8, 0.4));
+  auto sphere_3_mat = make_shared<lambertian>(color(0.4, 0.8, 0.8));
+  auto sphere_4_mat = make_shared<dielectric>(1.5);
+
+  world.add(make_shared<sphere>(point3(0, -1000, 0), 1000, ground_material));
+  world.add(make_shared<sphere>(point3(0, 1.2, -2), 1, sphere_1_mat));
+  world.add(make_shared<sphere>(point3(0, 1.2, -6), 2, sphere_2_mat));
+  world.add(make_shared<sphere>(point3(-3, 1, -6), 1, sphere_3_mat));
+  world.add(make_shared<sphere>(point3(-3, 1, -4), 1, sphere_4_mat));
+  world.add(make_shared<sphere>(point3(0, 1.2, -2), 0.2, sphere_2_mat));
+
+  // render
+  world = hittable_list(make_shared<bvh_node>(world));
+  camera cam;
+  cam.aspect_ratio = 16.0 / 9.0;
+  cam.image_width = 600;
+  cam.samples_per_pixel = 100;
+  cam.max_depth = 50;
+
+  cam.vfov = 90;
+  cam.lookfrom = point3(0.5, 2, 1);
+  cam.lookat = point3(0, 2, 0);
+  cam.vup = vec3(0, 1, 0);
+
+  cam.defocus_angle = 0;
+  cam.focus_dist = 10.0;
+
+  cam.render(world);
+}
+
 int main() {
-  switch (1) {
+  switch (2) {
   case 1:
     bouncingSpheres();
     break;
   case 2:
+    foo();
     break;
   }
 }

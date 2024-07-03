@@ -92,20 +92,24 @@ private:
 
 class weird : public material {
 public:
-  weird(const color &albedo) : albedo{albedo} {}
+  weird(const vec3 &stretch) : stretch{stretch} {}
 
   bool scatter(const ray &r_in, const hit_record &rec, color &attenuation,
                ray &scattered) const override {
-    auto reflected = reflect(r_in.direction(), rec.normal);
-    reflected =
-        unit_vector(reflected) + 3 * vec3(unit_vector(reflected).x(), 0, 0);
-    scattered = ray{rec.p, reflected};
-    attenuation = albedo;
+    attenuation = {0.9, 0.9, 0.9};
+    if (rec.front_face || true) {
+      scattered = ray{rec.p, r_in.direction() * stretch};
+    } else {
+      scattered = ray{rec.p, r_in.direction() * vec3(1.0 / stretch.x(),
+                                                     1.0 / stretch.y(),
+                                                     1.0 / stretch.z())};
+    }
+
     return true;
   }
 
 private:
-  color albedo;
+  vec3 stretch;
 };
 
 #endif // !MATERIAL_H

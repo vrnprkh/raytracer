@@ -1,4 +1,4 @@
-CC = g++
+CC = g++ 
 CFLAGS = -Wall -g -std=c++17
 
 main: main.o 
@@ -9,4 +9,4 @@ main.o: main.cc vec3.h color.h ray.h rtweekend.h sphere.h hittable_list.h hittab
 
 .PHONY: clean
 clean:
-	rm main *.o
+	rm main *o
