@@ -9,6 +9,8 @@
 #include "vec3.h"
 #include <iostream>
 #include <ostream>
+#include <thread>
+#include <vector>
 class camera {
 public:
   double aspect_ratio = 1.0;
@@ -23,6 +25,7 @@ public:
 
   double defocus_angle = 0;
   double focus_dist = 10;
+  bool multithreaded = false;
 
   void render(const hittable &world) {
     initialize();
@@ -32,13 +35,30 @@ public:
     for (int j = 0; j < image_height; j++) {
       std::clog << "\rScanlines remaining: " << (image_height - j)
                 << std::flush;
+      // each pixel should be a thread
+      std::vector<std::thread> threads;
+      // should have image_width pixels per row
+      std::vector<color> results(image_width);
+
+      // create threads
       for (int i = 0; i < image_width; i++) {
-        color pixel_color{0, 0, 0};
-        for (int sample = 0; sample < samples_per_pixel; sample++) {
-          ray r = get_ray(i, j);
-          pixel_color += ray_color(r, max_depth, world);
-        }
-        write_color(std::cout, pixel_color * pixel_sample_scale);
+        threads.emplace_back([this, i, j, &results, &world]() {
+          color pixel_color{0, 0, 0};
+          for (int sample = 0; sample < samples_per_pixel; sample++) {
+            ray r = get_ray(i, j);
+            pixel_color += ray_color(r, max_depth, world);
+          }
+          results[i] = pixel_color;
+        });
+      }
+
+      // join threads
+      for (int i = 0; i < image_width; i++) {
+        threads[i].join();
+      }
+      // write results here
+      for (auto &c : results) {
+        write_color(std::cout, c * pixel_sample_scale);
       }
     }
     std::clog << "\rDone.                   \n";
