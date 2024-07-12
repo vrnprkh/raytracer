@@ -6,11 +6,15 @@
 #include "material.h"
 #include "ray.h"
 #include "rtweekend.h"
+#include "threadpool.h"
 #include "vec3.h"
 #include <iostream>
+#include <mutex>
 #include <ostream>
+#include <stdexcept>
 #include <thread>
 #include <vector>
+
 class camera {
 public:
   double aspect_ratio = 1.0;
@@ -25,7 +29,7 @@ public:
 
   double defocus_angle = 0;
   double focus_dist = 10;
-  bool multithreaded = false;
+  bool blackSky = false;
 
   void render(const hittable &world) {
     initialize();
@@ -63,6 +67,39 @@ public:
     }
     std::clog << "\rDone.                   \n";
   }
+
+  // stuff for raylib delete later if broken
+  void manualinit() { initialize(); }
+  int getImageHeight() { return image_height; }
+  void renderToVector(const hittable &world,
+                      std::vector<std::vector<color>> &output, std::mutex &mtx,
+                      int &sampleNum) {
+    ThreadPool pool(std::thread::hardware_concurrency() - 1);
+    for (int sample = 0; sample < samples_per_pixel; sample++) {
+
+      pool.enqueue([this, &sampleNum, &output, &mtx, &world]() {
+        std::vector<std::vector<color>> buffer(image_height,
+                                               std::vector<color>(image_width));
+        for (int j = 0; j < image_height; j++) {
+          for (int i = 0; i < image_width; i++) {
+            ray r = get_ray(i, j);
+            buffer[j][i] = ray_color(r, max_depth, world);
+          }
+        }
+        // write
+        std::lock_guard<std::mutex> lock(mtx);
+        // std::cout << "cam " << sampleNum << std::endl;
+        sampleNum += 1;
+        for (int y = 0; y < image_height; y++) {
+          for (int x = 0; x < image_width; x++) {
+            output[y][x] += buffer[y][x];
+          }
+        }
+      });
+    }
+  }
+
+  // end stuff to delete
 
 private:
   int image_height;
@@ -137,6 +174,10 @@ private:
     double a = 0.5 * (unit_direction.y() + 1.0);
     // blend from whites to blues
     // blended value = (1-a)*start +a*end
+    if (blackSky) {
+      return color{0.01, 0.01, 0.02};
+    }
+
     return (1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0);
   }
 

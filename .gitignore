@@ -1,3 +1,7 @@
 *.o
 main
 *.ppm
+a.out
+a.out.dSYM/Contents/Resources/Relocations/aarch64/a.out.yml
+a.out.dSYM/Contents/Info.plist
+.DS_Store
